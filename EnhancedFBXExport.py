@@ -1,5 +1,6 @@
 import bpy
 import os
+import math
 
 bl_info = {
  "name": "Enhanced FBX Exporter",
@@ -67,6 +68,9 @@ class GHBatchExport(bpy.types.Operator):
         bpy.ops.object.select_by_type(type='MESH')
         col = bpy.context.selected_objects
 
+        # 2019.02.03 
+        # add back slash for path
+        context.scene.gh_batch_export_path += "\\"
         # Get directory path
         dirname = os.path.dirname(bpy.path.abspath(context.scene.gh_batch_export_path))
         # cursor to origin
@@ -87,6 +91,10 @@ class GHBatchExport(bpy.types.Operator):
 
             if context.scene.gh_group_children == True:
                  SelectChildren(obj)
+            
+            # 2019.02.03 
+            # turn obj to unity z up direction, value is using euler, the value for 90 degree is 1.5708
+            bpy.ops.transform.rotate(value = math.radians(-90), axis = (1, 0, 0), constraint_axis = (True, False, False), constraint_orientation = 'GLOBAL')
 
             # freeze rotation and scale
             # bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
@@ -96,8 +104,20 @@ class GHBatchExport(bpy.types.Operator):
             filename = os.path.join(dirname, name)
             print("Exporting: " + filename)
 
-            # Export .fbx
-            bpy.ops.export_scene.fbx(filepath=filename + ".fbx", use_selection=True, axis_forward='-Z', axis_up='Y')
+            # 2019.02.03 
+            #   add FBX_SCALE_ALL for unity to make scale as 1, otherwise will become 100
+            bpy.ops.export_scene.fbx(
+                filepath=filename + ".fbx"
+                , use_selection=True
+                , axis_forward='-Z'
+                , axis_up='Y'
+				, apply_scale_options = 'FBX_SCALE_ALL'
+                )
+            
+            # 2019.02.03 
+            # turn back object
+            bpy.ops.transform.rotate(value = 1.5708, axis = (1, 0, 0), constraint_axis = (True, False, False), constraint_orientation = 'GLOBAL')
+            bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
 
         return {'FINISHED'}
 
